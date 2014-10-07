@@ -33,12 +33,14 @@ if( !class_exists('CoAuthors2Admin') ){
         require plugin_dir_path(__DIR__).'lib/vendor/autoload.php';
       }
       $this->prefix = '_ca2_';
-      $this->user_role = 'edit_posts';
+      $this->user_role = array( 'authors', 'administrators' );
       $this->hooks();
     }
 
     public function hooks(){
       register_activation_hook( __FILE__, array( &$this, 'activate' ) );
+      add_action( 'pre_user_query', array( &$this, 'get_roles' ) );
+      add_action( 'admin_menu', array( &$this, 'settings_page' ) );
     }
 
     /**
@@ -59,6 +61,14 @@ if( !class_exists('CoAuthors2Admin') ){
       add_option( $this->prefix.'user_filter', $this->user_role );
     }
 
+    public function settings_page(){
+      add_options_page( 'Co-Authors2', 'Co-Authors2', 'manage_options', 'co-authors2-settings.php', array( &$this, 'load_settings_page' ) );
+    }
+
+    public function load_settings_page(){
+      include plugin_dir_path( __FILE__ )."pages/settings.php";
+    }
+
     /**
      * Get all user roles based on their capability.
      * 
@@ -73,9 +83,11 @@ if( !class_exists('CoAuthors2Admin') ){
       $roles = array();
 
       foreach( $all_roles as $role_name=>$role ){
+
         // by default only return user roles who can edit posts. Else, loop through the capabilities parameter to make sure user has all of the capabilities specified
         if( empty($capabilities) ){
-          if( in_array('edit_posts', $role['capabilities']) ){
+         
+          if( array_key_exists('edit_posts', $role['capabilities']) &&  $role['capabilities']['edit_posts'] ){
             $roles[] = $role_name;
           }
         }elseif( is_array($capabilities) ){
@@ -95,7 +107,7 @@ if( !class_exists('CoAuthors2Admin') ){
           }
         }
       }
-      
+
       if( !empty($roles) )
         return $roles;
       else

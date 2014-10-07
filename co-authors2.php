@@ -31,6 +31,6 @@ if ( ! empty( $_SERVER['SCRIPT_FILENAME'] ) && basename( __FILE__ ) == basename(
 if( ! array_key_exists( 'co_authors2', $GLOBALS ) ) {
   if( is_admin() ){
     require 'admin/co-authors2.admin.php';
-    $_GLOBALS['co_authors2_admin'] = new CoAuthors2Admin();
+    $GLOBALS['co_authors2_admin'] = new CoAuthors2Admin();
   }
 }
