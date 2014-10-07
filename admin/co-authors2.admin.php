@@ -7,7 +7,7 @@ if( !class_exists('CoAuthors2Admin') ){
   class CoAuthors2Admin{
 
     /**
-     * Default user role to filter when adding an author to the post.
+     * Default user roles to filter when adding an author to the post.
      * 
      * @var string
      */
@@ -32,19 +32,27 @@ if( !class_exists('CoAuthors2Admin') ){
       if( $this->debug  && !class_exists('Kint') ){
         require plugin_dir_path(__DIR__).'lib/vendor/autoload.php';
       }
-      $this->prefix = '_ca2_';
-      $this->user_role = array( 'authors', 'administrators' );
+      $this->prefix = 'ca2';
+      $this->user_roles = get_option( '_'.$this->prefix.'_role_filter', array( 'authors', 'administrators' ) );
       $this->hooks();
     }
 
+    /**
+     * WordPress action hooks to attach plugin methods to.
+     * 
+     * @return void
+     */
     public function hooks(){
       register_activation_hook( __FILE__, array( &$this, 'activate' ) );
       add_action( 'pre_user_query', array( &$this, 'get_roles' ) );
       add_action( 'admin_menu', array( &$this, 'settings_page' ) );
+      add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), array(&$this,'add_settings_link') );
+      add_action( 'admin_notices', array( &$this, 'admin_notices' ) );
+      add_action( 'admin_init', array( &$this, 'save_settings' ) );
     }
 
     /**
-     * Actions to perform when the plugin is activated
+     * Actions to perform when the plugin is activated.
      * 
      * @return void
      */
@@ -58,15 +66,74 @@ if( !class_exists('CoAuthors2Admin') ){
      * Options saved to WordPress' options table.
      */
     public function set_options(){
-      add_option( $this->prefix.'user_filter', $this->user_role );
+      update_option( '_'.$this->prefix.'_role_filter', $this->user_roles );
     }
 
+    /**
+     * Add pages to the settings menu
+     * 
+     * @return void
+     */
     public function settings_page(){
-      add_options_page( 'Co-Authors2', 'Co-Authors2', 'manage_options', 'co-authors2-settings.php', array( &$this, 'load_settings_page' ) );
+      add_options_page( 'Co-Authors2', 'Co-Authors2', 'manage_options', $this->prefix.'-settings.php', array( &$this, 'load_settings_page' ) );
     }
 
+    /**
+     * Content for the plugin settings page
+     * 
+     * @return void
+     */
     public function load_settings_page(){
-      include plugin_dir_path( __FILE__ )."pages/settings.php";
+      include plugin_dir_path( __FILE__ ).'pages/settings.php';
+    }
+
+    /**
+    * Add plugin settings link to plugin page.
+    *
+    * @return array Array of links to include on plugin page.
+    */
+    public function add_settings_link($links){
+      $settings_link = '<a href="options-general.php?page='.$this->prefix.'-settings.php">'.__('Settings').'</a>';
+      array_unshift($links, $settings_link);
+      return $links;
+    }
+
+    /**
+    * Save settings in options table
+    *
+    * Save plugin settings in options table
+    *
+    * @return void
+    */
+    public function save_settings(){
+    if( $_GET['page'] === $this->prefix.'-settings.php' ){
+      if( isset($_POST) &&
+        !empty($_POST) &&
+        array_filter($_POST) != false &&
+        is_admin() &&
+        check_admin_referer($this->prefix.'_save_settings',$this->prefix.'_settings') ){
+          // if user can't manage options
+          if( !current_user_can( 'manage_options' ) ) return;
+
+          $filter_roles = array();
+          foreach( $_POST[$this->prefix.'_role_filter'] as $role ){
+            $filter_roles[] = esc_attr($role);
+          }
+          $this->user_roles = $filter_roles;
+          $result = update_option( '_'.$this->prefix.'_role_filter', maybe_serialize($filter_roles) );
+        }
+      }
+    }
+
+    /**
+     * Show admin notice after updating plugin settings.
+     *
+     * @return void
+     */
+    public function admin_notices(){
+      if( $_GET['page'] === $this->prefix.'-settings.php' && !empty($_POST) ){
+        echo sprintf( '<div class="updated"><p>%s</p></div>', __( 'Updated Plugin Settings') );
+      }
     }
 
     /**
@@ -88,7 +155,7 @@ if( !class_exists('CoAuthors2Admin') ){
         if( empty($capabilities) ){
          
           if( array_key_exists('edit_posts', $role['capabilities']) &&  $role['capabilities']['edit_posts'] ){
-            $roles[] = $role_name;
+            $roles[$role_name] = $role['name'];
           }
         }elseif( is_array($capabilities) ){
           $has_capability = false;
@@ -100,11 +167,14 @@ if( !class_exists('CoAuthors2Admin') ){
           }
 
           if( $has_capability )
-            $roles[] = $role_name;
+            $roles[$role_name] = $role['name'];
         }elseif( is_string($capabilities) ){
-          if( in_array($capabilities, $role['capabilities']) ){
-            $roles[] = $role_name;
-          }
+          
+          if( $capabilities === 'all' )
+            $roles[$role_name] = $role['name'];
+          elseif( in_array($capabilities, $role['capabilities']) )
+            $roles[$role_name] = $role['name'];
+
         }
       }
 
@@ -114,5 +184,7 @@ if( !class_exists('CoAuthors2Admin') ){
         return '';
     }
 
+    
   }
+
 }
