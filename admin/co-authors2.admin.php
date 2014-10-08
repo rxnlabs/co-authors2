@@ -54,11 +54,35 @@ if( !class_exists('CoAuthors2Admin') ){
       register_activation_hook( __FILE__, array( &$this, 'activate' ) );
       add_action( 'pre_user_query', array( &$this, 'get_roles' ) );
       add_action( 'admin_menu', array( &$this, 'settings_page' ) );
-      add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), array(&$this,'add_settings_link') );
+      add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), array( &$this, 'add_settings_link') );
       add_action( 'admin_notices', array( &$this, 'admin_notices' ) );
       add_action( 'admin_init', array( &$this, 'save_settings' ) );
-      add_action( 'add_meta_boxes', array( $this, 'create_metaboxes') );
-      
+      add_action( 'add_meta_boxes', array( &$this, 'create_metaboxes' ) );
+      add_action( 'admin_enqueue_scripts', array( &$this, 'admin_enqueue' ) );
+      add_action( 'save_post', array( &$this, 'save_coauthors' ) );
+    }
+
+    /**
+     * Enqueue scripts for the dashboard
+     * 
+     * @return void
+     */
+    public function admin_enqueue(){
+      global $pagenow;
+      global $wp_scripts;
+      wp_register_script( 'typeahead.js', plugin_dir_url(__FILE__).'js/vendor/typeahead.js/dist/typeahead.bundle.min.js', array('jquery'), '0.10.5' );
+       wp_register_script( $this->prefix.'-admin', plugin_dir_url(__FILE__).'js/co-authors2.admin.js', array('jquery'), '1.0a' );
+       wp_register_style( 'typeahead.js',  plugin_dir_url(__FILE__).'css/typeahead.css', '', '1.0a' );
+
+      if( in_array($pagenow,array('post.php','post-new.php')) ){
+        wp_enqueue_script( 'jquery' );
+        wp_enqueue_script( 'typeahead.js' );
+        wp_localize_script( $this->prefix.'-admin', $this->prefix, array( 
+          'users' => json_encode($this->get_matched_users())
+          ));
+        wp_enqueue_script( $this->prefix.'-admin' );
+        wp_enqueue_style( 'typeahead.js' );
+      }
     }
 
     /**
@@ -206,23 +230,83 @@ if( !class_exists('CoAuthors2Admin') ){
         }
       }
 
-      if( !empty($roles) )
-        return $roles;
-      else
-        return '';
+      return (!empty($roles)?$roles:'');
     }
 
     /**
      * Custom metabox to select the post author.
      * 
-     * Show the custom metabox used to select multiple authors for teh post
+     * Show the custom metabox used to select multiple authors for the post
+     * 
+     * @return void
      */
     public function custom_metabox(){
+      global $wp_scripts;
       wp_nonce_field( basename( __FILE__ ), $this->prefix.'_select_author' );
-      if( get_post_meta( get_the_ID(), $this->prefix.'_post_author', true ) ){
-
+      if( get_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', true ) ){
+        $ca2_authors = get_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', true );
+      }else{
+        $ca2_authors = '';
       }
-      echo "ahahahghaga";
+
+      echo '<div id="'.$this->prefix.'_search_authors"><input class="typeahead" type="text" placeholder="Add Author">';
+
+      // if there are already authors assigned to the post, list them in the metabox
+      if( !empty($ca2_authors) ){
+        foreach( $ca2_authors as $author ){
+          $data = get_userdata( $author );
+          echo '<p>'.$data->display_name.'<input type="hidden" value="'.$author.'" name="'.$this->prefix.'_post_authors[]"></p>';
+        }
+      }
+
+      echo '</div>';
+    }
+
+    /**
+     * Save the coauthors for the post.
+     * 
+     * @return void
+     */
+    public function save_coauthors(){
+      if( defined( 'DOING_AJAX' ) && DOING_AJAX )
+        return false;
+
+      if( !isset( $_POST[$this->prefix.'_post_authors'] ) && !isset( $_POST[$this->prefix.'_select_author'] ) || !wp_verify_nonce( $_POST[$this->prefix.'_select_author'], basename( __FILE__ ) ) )
+        return false;
+
+      $authors = array();
+      foreach( $_POST[$this->prefix.'_post_authors'] as $author )
+        $authors[] = esc_attr($author);
+
+      delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
+      update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
+    }
+
+    /**
+     * Get the users that match the roles selected.
+     * 
+     * Get all users that match the roles that to be displayed
+     * 
+     * @return array An associative array of matched users with the user ID as the key and the display name as the value
+     */
+    public function get_matched_users(){
+      $matched_users = array();
+      // get all users who match the role(s) selected
+      foreach( $this->user_roles as $role ){
+        $users = get_users(array(
+          'role'=>$role,
+          'blog_id'=>$GLOBALS['blog_id'],
+          'fields'=>array( 'ID', 'display_name' )
+          ));
+
+        if( !empty($users) ){
+          foreach( $users as $user ){
+            $matched_users[] = array('user_id'=>$user->ID,'user_name'=>$user->display_name);
+          }
+        }
+      }
+
+      return (!empty($matched_users)?$matched_users:'');
     }
 
     
