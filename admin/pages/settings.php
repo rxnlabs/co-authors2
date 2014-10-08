@@ -10,7 +10,12 @@ global $co_authors2_admin;
     <?php 
     if( is_array($co_authors2_admin->get_roles('all')) ){
       foreach( $co_authors2_admin->get_roles('all') as $key=>$role ){
-        echo '<p><input value="'.$key.'" type="checkbox" name="'.$co_authors2_admin->prefix.'_role_filter[]" id="'.$key.'_role_filter"><label for="'.$key.'_role_filter">'.$role.'</label></p>';
+        if( in_array($key,$co_authors2_admin->user_roles) )
+          $filtered = 'checked';
+        else
+          $filtered = '';
+
+        echo '<p><input value="'.$key.'" type="checkbox" name="'.$co_authors2_admin->prefix.'_role_filter[]" id="'.$key.'_role_filter" '.$filtered.'><label for="'.$key.'_role_filter">'.$role.'</label></p>';
       }
     }
     wp_nonce_field( $co_authors2_admin->prefix.'_save_settings', $co_authors2_admin->prefix.'_settings' );

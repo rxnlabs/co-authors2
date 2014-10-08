@@ -27,13 +27,21 @@ if( !class_exists('CoAuthors2Admin') ){
      */
     public $prefix;
 
+    /**
+     * Post types where we won't show the authors metabox.
+     * 
+     * @var array
+     */
+    public $filtered_cpt;
+
     public function __construct(){
       $this->debug = true;
       if( $this->debug  && !class_exists('Kint') ){
         require plugin_dir_path(__DIR__).'lib/vendor/autoload.php';
       }
       $this->prefix = 'ca2';
-      $this->user_roles = get_option( '_'.$this->prefix.'_role_filter', array( 'authors', 'administrators' ) );
+      $this->user_roles = maybe_unserialize( get_option( '_'.$this->prefix.'_role_filter', array( 'author', 'administrator', 'editor' ) ) );
+      $this->filtered_cpt = array( 'acf' );
       $this->hooks();
     }
 
@@ -49,6 +57,24 @@ if( !class_exists('CoAuthors2Admin') ){
       add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), array(&$this,'add_settings_link') );
       add_action( 'admin_notices', array( &$this, 'admin_notices' ) );
       add_action( 'admin_init', array( &$this, 'save_settings' ) );
+      add_action( 'add_meta_boxes', array( $this, 'create_metaboxes') );
+      
+    }
+
+    /**
+     * Create custom metaboxes used by plugin.
+     * 
+     * @return void
+     */
+    public function create_metaboxes(){
+      $post_types = get_post_types( array(
+        'public'=>true,
+        'publicly_queryable'=>true
+        ), 'names' );
+      foreach( $post_types as $type ){
+        if( !in_array($type,$this->filtered_cpt) )
+          add_meta_box( $this->prefix.'_select_author', 'Post Authors', array( $this, 'custom_metabox' ), $type, 'normal', 'core' );
+      }
     }
 
     /**
@@ -116,8 +142,10 @@ if( !class_exists('CoAuthors2Admin') ){
           if( !current_user_can( 'manage_options' ) ) return;
 
           $filter_roles = array();
-          foreach( $_POST[$this->prefix.'_role_filter'] as $role ){
-            $filter_roles[] = esc_attr($role);
+          if( !empty($_POST[$this->prefix.'_role_filter']) ){
+            foreach( $_POST[$this->prefix.'_role_filter'] as $role ){
+              $filter_roles[] = esc_attr($role);
+            }
           }
           $this->user_roles = $filter_roles;
           $result = update_option( '_'.$this->prefix.'_role_filter', maybe_serialize($filter_roles) );
@@ -182,6 +210,19 @@ if( !class_exists('CoAuthors2Admin') ){
         return $roles;
       else
         return '';
+    }
+
+    /**
+     * Custom metabox to select the post author.
+     * 
+     * Show the custom metabox used to select multiple authors for teh post
+     */
+    public function custom_metabox(){
+      wp_nonce_field( basename( __FILE__ ), $this->prefix.'_select_author' );
+      if( get_post_meta( get_the_ID(), $this->prefix.'_post_author', true ) ){
+
+      }
+      echo "ahahahghaga";
     }
 
     
