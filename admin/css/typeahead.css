@@ -1,21 +1,21 @@
 #searchform input[type="submit"] {
 	width: 25%;
-	}
+}
 
 .twitter-typeahead {
 	width: 73% !important;
-	}
+}
 
 .twitter-typeahead * {
 	-moz-box-sizing: border-box;
 	-webkit-box-sizing: border-box;
 	box-sizing: border-box;
-	}
+}
 
-	.typeahead.tt-input{
-		padding-top: 5px;
-		padding-left: 6px;
-	}
+.typeahead.tt-input{
+	padding-top: 5px;
+	padding-left: 6px;
+}
 
 .tt-query,
 .tt-hint {
@@ -23,11 +23,11 @@
 	outline: none;
 	width: 100% !important;
 	vertical-align: inherit !important;
-	}
+}
 
 .tt-hint {
 	color: #ccc
-	}
+}
 
 .tt-dropdown-menu {
 	width: 100%;
@@ -44,47 +44,52 @@
 	box-shadow: 0 5px 10px rgba(0,0,0,.2);
 	text-shadow: none;
 	cursor: pointer;
-	}
+}
 
-	.tt-dropdown-menu p {
-		margin: 5px 0 !important;
-		line-height: 1.4 !important;
-		}
+.tt-dropdown-menu p {
+	margin: 5px 0 !important;
+	line-height: 1.4 !important;
+}
 
-	.tt-dropdown-menu a {
-		color: #ccc !important;
-		border: 0 !important;
-		display: block;
-		text-decoration: none !important;
-		cursor: pointer;
-		}
+.tt-dropdown-menu a {
+	color: #ccc !important;
+	border: 0 !important;
+	display: block;
+	text-decoration: none !important;
+	cursor: pointer;
+}
 
 .tt-suggestion {
 	padding: 3px 10px;
 	font-size: 14px;
 	line-height: 18px;
 	cursor: pointer;
-	}
+}
 
 .tt-suggestion.tt-is-under-cursor {
 	color: #fff;
 	background-color: #0097cf;
-	}
+}
 
-	.tt-suggestion.tt-is-under-cursor a {
-		color: #fff !important;
-		}
+.tt-suggestion.tt-is-under-cursor a {
+	color: #fff !important;
+}
 
 .tt-suggestion p {
 	margin: 0;
-	}
+}
 
 /* rtl support */
 .twitter-typeahead.tt-rtl {
 	direction: rtl;
-	}
+}
 
 .twitter-typeahead.tt-rtl .tt-dropdown-menu {
 	left: auto;
 	right: 0;
-	}
+}
+
+#ca2_search_authors .tt-dropdown-menu {
+	max-height: 150px;
+	overflow-y: auto;
+}
