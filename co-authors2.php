@@ -29,8 +29,32 @@ if ( ! empty( $_SERVER['SCRIPT_FILENAME'] ) && basename( __FILE__ ) == basename(
 
 // Only create an instance of the plugin if it doesn't already exists in GLOBALS
 if( ! array_key_exists( 'co_authors2', $GLOBALS ) ) {
-  if( is_admin() ){
-    require 'admin/co-authors2.admin.php';
-    $GLOBALS['co_authors2_admin'] = new CoAuthors2Admin();
+
+  class CoAuthors2{
+
+    /**
+     * Prefix used by plugin to save.
+     * 
+     * @var string
+     */
+    public $prefix = 'ca2';
+
+    /**
+     * Plugin constructor.
+     * 
+     * @return void
+     */
+    public function __construct(){
+      if( is_admin() ){
+        require 'admin/co-authors2.admin.php';
+        $GLOBALS['co_authors2_admin'] = new CoAuthors2Admin;
+      }else{
+        require 'public/co-authors2.public.php';
+        $GLOBALS['co_authors2_public'] = new CoAuthors2Public;
+      }
+    }
+
   }
 }
+
+$GLOBALS['co_authors2'] = $co_authors2 = new CoAuthors2;
