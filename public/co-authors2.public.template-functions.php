@@ -51,12 +51,12 @@ function get_coauthors2( $post_id = '' ){
  * 
  * @return void
  */
-function coauthors2_posts_link( $post_id = '' ){
+function coauthors2_posts_links( $post_id = '' ){
   
-  if( get_coauthors2_posts_link($post_id)[0] instanceof WP_Error && ini_get('display_errors') == 1 ){
-    echo get_coauthors2_posts_link($post_id)[0]->get_error_message( $coauthors[0]->get_error_code() );
+  if( get_coauthors2_posts_links($post_id)[0] instanceof WP_Error && ini_get('display_errors') == 1 ){
+    echo get_coauthors2_posts_links($post_id)[0]->get_error_message( $coauthors[0]->get_error_code() );
   }else{
-    echo get_coauthors2_posts_link($post_id); 
+    echo get_coauthors2_posts_links($post_id); 
   }
 
 }
@@ -68,7 +68,7 @@ function coauthors2_posts_link( $post_id = '' ){
  * 
  * @return string|WP_Error HTML with links to author's page and author's display name or instance of WP_Error if something went wrong
  */
-function get_coauthors2_posts_link( $post_id = '' ){
+function get_coauthors2_posts_links( $post_id = '' ){
   global $post;
   global $co_authors2;
 
