@@ -53,12 +53,21 @@ if( ! array_key_exists( 'co_authors2', $GLOBALS ) ) {
      * @return void
      */
     public function __construct(){
-      if( is_admin() ){
+      if( php_sapi_name() === 'cli' ){
         require 'admin/co-authors2.admin.php';
-        $GLOBALS['co_authors2_admin'] = new CoAuthors2Admin;
-      }else{
         require 'public/co-authors2.public.php';
+        $GLOBALS['co_authors2_admin'] = new CoAuthors2Admin;
         $GLOBALS['co_authors2_public'] = new CoAuthors2Public;
+      }else{
+
+        if( is_admin() ){
+          require 'admin/co-authors2.admin.php';
+          $GLOBALS['co_authors2_admin'] = new CoAuthors2Admin;
+        }else{
+          require 'public/co-authors2.public.php';
+          $GLOBALS['co_authors2_public'] = new CoAuthors2Public;
+        }
+
       }
     }
 
