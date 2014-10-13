@@ -44,7 +44,7 @@ if( !class_exists('CoAuthors2Admin') ){
       register_activation_hook( __FILE__, array( &$this, 'activate' ) );
       add_action( 'pre_user_query', array( &$this, 'get_roles' ) );
       add_action( 'admin_menu', array( &$this, 'settings_page' ) );
-      add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), array( &$this, 'add_settings_link') );
+      add_filter( 'plugin_action_links_co-authors2/co-authors2.php', array( &$this, 'add_settings_link') );
       add_action( 'admin_notices', array( &$this, 'admin_notices' ) );
       add_action( 'admin_init', array( &$this, 'save_settings' ) );
       add_action( 'add_meta_boxes', array( &$this, 'create_metaboxes' ) );
@@ -138,9 +138,9 @@ if( !class_exists('CoAuthors2Admin') ){
     * @return array Array of links to include on plugin page.
     */
     public function add_settings_link($links){
-      $settings_link = '<a href="options-general.php?page='.$this->prefix.'-settings.php">'.__('Settings').'</a>';
-      array_unshift($links, $settings_link);
-      return $links;
+      $settings_link = array( '<a href="'.admin_url('options-general.php?page='.$this->prefix.'-settings.php').'">'.__('Settings').'</a>' );
+      
+      return array_merge($links, $settings_link);
     }
 
     /**
@@ -192,10 +192,10 @@ if( !class_exists('CoAuthors2Admin') ){
      * 
      * @return void
      */
-    public function import_co_authors_plus(){
+    public function import_co_authors_plus( $echo = false ){
 
       // flag to set whether we've already imported authors from the Co-Authors Plus plugin
-      $already_imported_coauthors_plus = get_option( '_'.$this->prefix.'_imported_coauthrsplus', 0 );
+      $already_imported_coauthors_plus = (int)get_option( '_'.$this->prefix.'_imported_coauthrsplus', 0 );
 
       if( $already_imported_coauthors_plus != 1 ){  
         define('WP_MEMORY_LIMIT','512');
@@ -207,46 +207,58 @@ if( !class_exists('CoAuthors2Admin') ){
           ), 'names' );
 
         foreach( $post_types as $post_type ){
+          // check if the post type supports an author
+          if( !post_type_supports( $post_type,'author') || in_array($post_type, $this->filtered_cpt) )
+            continue;
+
           $posts = get_posts(array(
             'posts_per_page'=>-1,
             'fields'=>'ids'
             ));
 
-          // import from the co-authors-plus plugin
-          if( is_plugin_active( 'co-authors-plus/co-authors-plus.php' ) && !empty($_POST[$this->prefix.'_import_co_authors_plus']) ){
-            global $coauthors_plus;
+          $co_authors_plus = is_plugin_active( 'co-authors-plus/co-authors-plus.php' );
 
-            foreach( $posts as $single_post ){
+          $count = 0;
+          foreach( $posts as $single_post ){
+            $coauthors = array();
+            // import from the co-authors-plus plugin
+            if( $co_authors_plus ){
+              global $coauthors_plus;
+
               $authors = get_coauthors( $single_post );
 
-              $coauthors = array();
               foreach( $authors as $author ){
                 $coauthors[] = $author->ID;
               }
 
               if( count($coauthors) == 0 )
                 $coauthors[] = $single_post->post_author;
+
+            }else{
+              $coauthors[] = $single_post->post_author;
             }
 
-          }else{
-            $coauthors[] = $single_post->post_author;
-          }
+            // make sure this post doesn't already have the co-authors2 meta data before overwriting it
+            $already_has_co2_authors = get_post_meta( $single_post, '_'.$this->prefix.'_post_authors', true );
 
-          // make sure this post doesn't already have the co-authors2 meta data before overwriting it
-          $already_has_co2_authors = get_post_meta( $single_post, '_'.$this->prefix.'_post_authors', true );
+            if( empty($already_has_co2_authors) ){
+              delete_post_meta( $single_post, '_'.$this->prefix.'_post_authors' );
+              update_post_meta( $single_post, '_'.$this->prefix.'_post_authors', $coauthors, true );
+              if( $echo ) echo "Imported authors for post $single_post\n";
+            }else{
+              if( $echo ) echo "Co-Authors already set for post $single_post\n";
+            }
 
-          if( empty($already_has_co2_authors) ){
-            delete_post_meta( $single_post, '_'.$this->prefix.'_post_authors' );
-            update_post_meta( $single_post, '_'.$this->prefix.'_post_authors', $coauthors, true );
-
+            $count++;
           }
         }
 
         update_option( '_'.$this->prefix.'_imported_coauthrsplus', 1 );
-        return "Finished importing post authors to Co-Authors2 plugin\n";
-
+        if( $echo ) echo "Finished importing post authors to Co-Authors2 plugin\n";
+        if( $echo ) echo "Imported post authors for $count posts\n";
       }else{
-        return "Already imported post authors to Co-Authors2 plugin\n";
+        if( $echo ) echo "Already imported post authors to Co-Authors2 plugin\n";
+
       }
 
     }
