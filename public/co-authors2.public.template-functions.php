@@ -57,8 +57,8 @@ if( !function_exists('get_coauthors2') ){
 if( !function_exists('coauthors2_posts_links') ){
   function coauthors2_posts_links( $post_id = '' ){
     
-    if( get_coauthors2_posts_links($post_id)[0] instanceof WP_Error && ini_get('display_errors') == 1 ){
-      echo get_coauthors2_posts_links($post_id)[0]->get_error_message( $coauthors[0]->get_error_code() );
+    if( get_coauthors2_posts_links($post_id) instanceof WP_Error && ini_get('display_errors') == 1 ){
+      echo get_coauthors2_posts_links($post_id)->get_error_message( get_coauthors2_posts_links($post_id)->get_error_code() );
     }else{
       echo get_coauthors2_posts_links($post_id); 
     }
