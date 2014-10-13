@@ -7,6 +7,7 @@ if( !class_exists('CoAuthors2Public') ){
   class CoAuthors2Public extends CoAuthors2{
     public function __construct(){
       require 'co-authors2.public.template-functions.php';
+      $this->hooks();
     }
 
     public function hooks(){

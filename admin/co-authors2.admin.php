@@ -18,7 +18,7 @@ if( !class_exists('CoAuthors2Admin') ){
      * 
      * @var bool
      */
-    public $debug;
+    public $debug = false;
 
     /**
      * Post types where we won't show the authors metabox.
@@ -28,11 +28,10 @@ if( !class_exists('CoAuthors2Admin') ){
     public $filtered_cpt = array( 'acf' );
 
     public function __construct(){
-      $this->debug = true;
       if( $this->debug  && !class_exists('Kint') ){
         require plugin_dir_path(__DIR__).'lib/vendor/autoload.php';
       }
-      $this->user_roles = maybe_unserialize( get_option( '_'.$this->prefix.'_role_filter', array( 'author', 'administrator', 'editor' ) ) );
+      $this->user_roles = maybe_unserialize( get_option( '_'.$this->prefix.'_role_filter', array( 'author', 'administrator', 'editor', 'contributor' ) ) );
       $this->hooks();
     }
 
@@ -51,6 +50,8 @@ if( !class_exists('CoAuthors2Admin') ){
       add_action( 'add_meta_boxes', array( &$this, 'create_metaboxes' ) );
       add_action( 'admin_enqueue_scripts', array( &$this, 'admin_enqueue' ) );
       add_action( 'save_post', array( &$this, 'save_coauthors' ) );
+      add_filter( 'manage_posts_columns', array( &$this, 'custom_post_columns') );
+      add_action( 'manage_posts_custom_column', array( &$this, 'custom_post_columns_content'), 10, 2 );
     }
 
     /**
@@ -62,8 +63,10 @@ if( !class_exists('CoAuthors2Admin') ){
       global $pagenow;
       global $wp_scripts;
       wp_register_script( 'typeahead.js', plugin_dir_url(__FILE__).'js/vendor/typeahead.js/dist/typeahead.bundle.min.js', array('jquery'), '0.10.5' );
-       wp_register_script( $this->prefix.'-admin', plugin_dir_url(__FILE__).'js/co-authors2.admin.js', array('jquery'), '1.0a' );
+       wp_register_script( $this->prefix.'-admin', plugin_dir_url(__FILE__).'js/co-authors2.admin.js', array('jquery'), $this->version );
        wp_register_style( 'typeahead.js',  plugin_dir_url(__FILE__).'css/typeahead.css', '', '1.0a' );
+       wp_register_style( $this->prefix.'-admin', plugin_dir_url(__FILE__).'css/co-authors2.admin.css', '', $this->version );
+       wp_register_style( $handle, $src, $deps, $ver, $media );
 
       if( in_array($pagenow,array('post.php','post-new.php')) ){
         wp_enqueue_script( 'jquery' );
@@ -73,6 +76,7 @@ if( !class_exists('CoAuthors2Admin') ){
           ));
         wp_enqueue_script( $this->prefix.'-admin' );
         wp_enqueue_style( 'typeahead.js' );
+        wp_enqueue_style( $this->prefix.'-admin' );
       }
     }
 
@@ -87,7 +91,7 @@ if( !class_exists('CoAuthors2Admin') ){
         'publicly_queryable'=>true
         ), 'names' );
       foreach( $post_types as $type ){
-        if( !in_array($type,$this->filtered_cpt) )
+        if( !in_array($type,$this->filtered_cpt) && post_type_supports( $type,'author') )
           add_meta_box( $this->prefix.'_select_author', 'Post Authors', array( $this, 'custom_metabox' ), $type, 'normal', 'core' );
       }
     }
@@ -314,14 +318,18 @@ if( !class_exists('CoAuthors2Admin') ){
         $ca2_authors = '';
       }
 
-      echo '<div id="'.$this->prefix.'_search_authors"><input class="typeahead" type="text" placeholder="Add Author">';
+      echo '<p>'.__( 'Select post authors by typing an author\'s name in the textbox below' ).'</p>'; 
+      echo '<div id="'.$this->prefix.'_search_authors"><input class="typeahead" type="text" placeholder="'.__('Add Author').'">';
 
       // if there are already authors assigned to the post, list them in the metabox
       if( !empty($ca2_authors) ){
         foreach( $ca2_authors as $author ){
           $data = get_userdata( $author );
-          echo '<p>'.$data->display_name.'<input type="hidden" value="'.$author.'" name="'.$this->prefix.'_post_authors[]"></p>';
+          echo '<p>'.$data->display_name.'<input type="hidden" value="'.$author.'" name="'.$this->prefix.'_post_authors[]"> <a class="ca2_remove_author">Remove</a></p>';
         }
+      }else{
+        $data = get_userdata( wp_get_current_user()->ID );
+        echo '<p>'.$data->display_name.'<input type="hidden" value="'.$author.'" name="'.$this->prefix.'_post_authors[]"> <a class="ca2_remove_author">Remove</a></p>';
       }
 
       echo '</div>';
@@ -347,6 +355,7 @@ if( !class_exists('CoAuthors2Admin') ){
         $authors[] = wp_get_current_user()->ID;
       }
 
+      $authors = array_unique($authors);
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
       update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
     }
@@ -378,7 +387,43 @@ if( !class_exists('CoAuthors2Admin') ){
       return (!empty($matched_users)?$matched_users:'');
     }
 
-    
+    /**
+     * Add the co-authors2 column to the posts page.
+     * 
+     * @return array Column names to display
+     */
+    public function custom_post_columns($defaults){
+      $defaults[$this->prefix.'_column'] = 'Co-Authors';
+      return $defaults;
+    }
+
+    /**
+     * Show the content to be used when displaying the co-authors column.
+     * 
+     * Show the co-authors on the WordPress posts page.
+     * 
+     * @return void
+     */
+    public function custom_post_columns_content( $column_name, $post_id ){
+
+      if( $column_name == $this->prefix.'_column' ){
+      
+        $ca2_authors = get_post_meta( $post_id, '_'.$this->prefix.'_post_authors', true );
+        $authors = array();
+        // if there are already authors assigned to the post, list them in the metabox
+        if( !empty($ca2_authors) ){
+          foreach( $ca2_authors as $author ){
+            $data = get_userdata( $author );
+            $authors[] = '<a href="edit.php?author_name='.$data->user_login.'">'.$data->display_name.'</a>';
+          }
+        }
+
+        if( !empty($authors[0]) )
+          echo implode(', ',$authors);
+      }
+
+    }
+
   }
 
 }

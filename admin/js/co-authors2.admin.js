@@ -1,7 +1,6 @@
 
 jQuery(document).ready(function($){
   var users = $.parseJSON(ca2.users);
-  console.log(users);
   var substringMatcher = function(strs) {
     return function findMatches(q, cb) {
       var matches, substrRegex;
@@ -26,6 +25,7 @@ jQuery(document).ready(function($){
     };
   };
 
+  // initialize the typeahead plugin
   $('#ca2_search_authors .typeahead').typeahead({
     hint: true,
     highlight: true,
@@ -36,7 +36,12 @@ jQuery(document).ready(function($){
     displayKey: 'value',
     source: substringMatcher(users)
   }).on('typeahead:selected', function(event,data){
-    $('#ca2_search_authors').append('<p>'+data.value+'<input type="hidden" value="'+data.user_id+'" name="ca2_post_authors[]"></p>');
+    $('#ca2_search_authors').append('<p>'+data.value+'<input type="hidden" value="'+data.user_id+'" name="ca2_post_authors[]"> <a class="ca2_remove_author">Remove</a></p>');
     $(this).val('');
+  });
+
+  // remove the author from the post
+  $(document).on('click','.ca2_remove_author',function(){
+    $(this).parent().remove();
   });
 });
