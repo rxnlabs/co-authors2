@@ -3,3 +3,11 @@ a.ca2_remove_author{
   text-decoration: underline;
   cursor: pointer;
 }
+#authordiv{
+  display: none;
+}
+#ca2_settings_page h2 span.dashicons{
+  font-size: 31px;
+  width: auto;
+  height: inherit;
+}

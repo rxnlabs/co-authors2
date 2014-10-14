@@ -66,7 +66,7 @@ if( !class_exists('CoAuthors2Admin') ){
        wp_register_script( $this->prefix.'-admin', plugin_dir_url(__FILE__).'js/co-authors2.admin.js', array('jquery'), $this->version );
        wp_register_style( 'typeahead.js',  plugin_dir_url(__FILE__).'css/typeahead.css', '', '1.0a' );
        wp_register_style( $this->prefix.'-admin', plugin_dir_url(__FILE__).'css/co-authors2.admin.css', '', $this->version );
-       wp_register_style( $handle, $src, $deps, $ver, $media );
+       wp_enqueue_style( $this->prefix.'-admin' );
 
       if( in_array($pagenow,array('post.php','post-new.php')) ){
         wp_enqueue_script( 'jquery' );
@@ -76,7 +76,6 @@ if( !class_exists('CoAuthors2Admin') ){
           ));
         wp_enqueue_script( $this->prefix.'-admin' );
         wp_enqueue_style( 'typeahead.js' );
-        wp_enqueue_style( $this->prefix.'-admin' );
       }
     }
 
