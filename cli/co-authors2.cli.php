@@ -52,7 +52,7 @@ class CoAuthors2Import{
       update_post_meta( $post->ID,'_'.$GLOBALS['co_authors2']->prefix.'_post_authors', $verified_authors );
 
       $test = implode(', ', $verified_authors);
-      echo "Added and verfied co-authors for post {$post->ID}. Co-Authors are $test\n";
+      echo "Added and verified co-authors for post {$post->ID}. Co-Authors are $test\n";
 
       if( !empty($publication) ){
         $test = implode(', ', $verified_authors);
@@ -73,6 +73,7 @@ class CoAuthors2Import{
           foreach($find_publication as $pub){
             
             $publication_contributors = get_post_meta($pub->ID,'_pub_contributors', true);
+            $active_authors = get_post_meta($pub->ID,'_emeritus', true);
 
             if( empty($publication_contributors) ){
               $publication_contributors = $verified_authors;
@@ -80,11 +81,13 @@ class CoAuthors2Import{
               $publication_contributors = array_merge($publication_contributors,$verified_authors);
             }
 
+            $publication_contributors = array_merge($publication_contributors,$active_authors);
+
             $publication_contributors = array_unique($publication_contributors);
 
             update_post_meta( $pub->ID, '_pub_contributors', $publication_contributors );
 
-            echo "Added authors to publication {$pub->post_title}\n";
+            echo "Added authors $test to publication {$pub->post_title}\n";
           }
         }
       }
