@@ -386,7 +386,7 @@ if( !class_exists('CoAuthors2Admin') ){
       // if the user who wrote the post is NOT one of the co-authors, make the post's actual author the first author selected. This way the wrong author won't show up in the post if plugin is removed
       if( !in_array(wp_get_current_user()->ID,$authors) ){
         $post->post_author = $authors[0];
-        wp_update_post( $post );
+        //wp_update_post( $post );
       }
 
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
