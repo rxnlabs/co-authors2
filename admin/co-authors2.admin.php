@@ -349,7 +349,7 @@ if( !class_exists('CoAuthors2Admin') ){
         }
       }else{
         $data = get_userdata( wp_get_current_user()->ID );
-        echo '<p>'.$data->display_name.'<input type="hidden" value="'.$author.'" name="'.$this->prefix.'_post_authors[]"> <a class="ca2_remove_author">Remove</a></p>';
+        echo '<p>'.$data->display_name.'<input type="hidden" value="'.$author.'" name="'.$this->prefix.'_post_authors[]" class="ca2_post_authors"> <a class="ca2_remove_author">Remove</a></p>';
       }
 
       echo '</div>';
@@ -362,6 +362,7 @@ if( !class_exists('CoAuthors2Admin') ){
      */
     public function save_coauthors(){
       global $post;
+      global $wpdb;
       if( defined( 'DOING_AJAX' ) && DOING_AJAX )
         return false;
 
@@ -383,44 +384,31 @@ if( !class_exists('CoAuthors2Admin') ){
 
       $authors = array_unique($authors);
 
-      // if the user who wrote the post is NOT one of the co-authors, make the post's actual author the first author selected. This way the wrong author won't show up in the post if plugin is removed
-      if( !in_array(wp_get_current_user()->ID,$authors) ){
-        $post->post_author = $authors[0];
-        //wp_update_post( $post );
-      }
-
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
       update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
 
-      /*
-      $find_publication = get_posts(array(
-          'post_type'=>'af_product',
-          'meta_query'=>array(
-              array(
-                'key'=>'pubcode',
-                'value'=>esc_attr( $_POST['_pubcode'] )
-              )
-            ),
-          'posts_per_page'=>-1,
-          'post_status'=>'any'
-          ));
+      $pubcode = esc_attr( $_POST['_pubcode'] );
+
+      // find the publication that the post belongs to and add the editor to the list of publication contributors
+      $query = "SELECT $wpdb->postmeta.post_id FROM $wpdb->postmeta WHERE $wpdb->postmeta.meta_key = 'pubcode' AND $wpdb->postmeta.meta_value = '$pubcode' LIMIT 1";
+
+      $find_publication = $wpdb->get_row( $query, OBJECT );
 
       if( !empty($find_publication) ){
-        foreach($find_publication as $pub){
           
-          $publication_contributors = get_post_meta($pub->ID,'_pub_contributors', true);
+        $publication_contributors = get_post_meta($find_publication->post_id,'_pub_contributors', true);
 
-          if( empty($publication_contributors) ){
-            $publication_contributors = $authors;
-          }else{
-            $publication_contributors = array_merge($publication_contributors,$authors);
-          }
-
-          $publication_contributors = array_unique($publication_contributors);
-
-          update_post_meta( $pub->ID, '_pub_contributors', $publication_contributors );
+        if( empty($publication_contributors) ){
+          $publication_contributors = $authors;
+        }else{
+          $publication_contributors = array_merge($publication_contributors,$authors);
         }
-      */
+
+        $publication_contributors = array_unique($publication_contributors);
+
+        update_post_meta( $find_publication->post_id, '_pub_contributors', $publication_contributors );
+      }
+      
     }
 
     /**

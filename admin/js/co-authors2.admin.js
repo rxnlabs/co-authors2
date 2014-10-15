@@ -36,12 +36,18 @@ jQuery(document).ready(function($){
     displayKey: 'value',
     source: substringMatcher(users)
   }).on('typeahead:selected', function(event,data){
-    $('#ca2_search_authors').append('<p>'+data.value+'<input type="hidden" value="'+data.user_id+'" name="ca2_post_authors[]"> <a class="ca2_remove_author">Remove</a></p>');
+    $('#ca2_search_authors').append('<p>'+data.value+'<input type="hidden" value="'+data.user_id+'" name="ca2_post_authors[]" class="ca2_post_authors"> <a class="ca2_remove_author">Remove</a></p>');
     $(this).val('');
   });
 
   // remove the author from the post
   $(document).on('click','.ca2_remove_author',function(){
     $(this).parent().remove();
+  });
+
+  // make the post's actual author the first author selected. This way the wrong author won't show up in the post if plugin is removed
+  $('form#post').on('submit',function(){
+    var first_coauthor = $('input.ca2_post_authors:first').val();
+    $('#post_author_override').val(first_coauthor);
   });
 });
