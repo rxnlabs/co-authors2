@@ -361,6 +361,7 @@ if( !class_exists('CoAuthors2Admin') ){
      * @return void
      */
     public function save_coauthors(){
+      global $post;
       if( defined( 'DOING_AJAX' ) && DOING_AJAX )
         return false;
 
@@ -381,6 +382,13 @@ if( !class_exists('CoAuthors2Admin') ){
       do_action('ca2_save_post_authors', get_the_ID(), $authors );
 
       $authors = array_unique($authors);
+
+      // if the user who wrote the post is NOT one of the co-authors, make the post's actual author the first author selected. This way the wrong author won't show up in the post if plugin is removed
+      if( !in_array(wp_get_current_user()->ID,$authors) ){
+        $post->post_author = $authors[0];
+        wp_update_post( $post );
+      }
+
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
       update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
 
