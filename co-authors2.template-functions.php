@@ -82,7 +82,7 @@ if( !function_exists('get_coauthors2_posts_links') ){
     $default_author = '';
 
     if( empty($post_id ) )
-      $post_id = $post->ID;
+      $post_id = get_the_ID();
 
     if( is_string($post_id) || is_numeric($post_id) ){
       $post_id = $post_id;

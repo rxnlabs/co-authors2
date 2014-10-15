@@ -69,6 +69,8 @@ if( ! array_key_exists( 'co_authors2', $GLOBALS ) ) {
         }
 
       }
+
+      require 'co-authors2.template-functions.php';
     }
 
   }

@@ -9,10 +9,11 @@ class CoAuthors2Import{
     echo $GLOBALS['co_authors2_admin']->import_co_authors_plus(true);
   }
 
-  public static function relates_authors_to_pubs(){
+  public static function relate_authors_to_pubs(){
     $relate = get_posts( array(
       'post_type'=>'post',
       'posts_per_page'=>-1,
+      'post_status'=>'any'
       ) );
 
     foreach( $relate as $post ){
@@ -22,11 +23,14 @@ class CoAuthors2Import{
       if( empty($has_coauthors) ){
         $has_coauthors = array();
         $has_coauthors[] = $post->post_author;
+        delete_post_meta( $post->ID,'_'.$GLOBALS['co_authors2']->prefix.'_post_authors' );
         update_post_meta( $post->ID,'_'.$GLOBALS['co_authors2']->prefix.'_post_authors', $has_coauthors );
         echo "Added post authors to {$post->ID}\n";
       }
 
       if( !empty($publication) ){
+        $test = implode(', ', $has_coauthors);
+        echo "Post {$post->ID} part of pub $publication with co-authors $test\n";
         $find_publication = get_posts(array(
           'post_type'=>'af_product',
           'meta_query'=>array(
@@ -36,6 +40,7 @@ class CoAuthors2Import{
               )
             ),
           'posts_per_page'=>-1,
+          'post_status'=>'any'
           ));
 
         if( !empty($find_publication) ){
@@ -69,4 +74,4 @@ define('DB_HOST','127.0.0.1');
 require __DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'wp-load.php';
 require __DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'wp-admin/includes/plugin.php';
 require '../co-authors2.php';
-CoAuthors2Import::relates_authors_to_pubs();
+CoAuthors2Import::relate_authors_to_pubs();

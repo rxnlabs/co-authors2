@@ -372,12 +372,44 @@ if( !class_exists('CoAuthors2Admin') ){
         foreach( $_POST[$this->prefix.'_post_authors'] as $author )
           $authors[] = esc_attr($author);
       }else{
-        $authors[] = wp_get_current_user()->ID;
+        if( empty( $_POST['post_author_override'] ) )
+          $authors[] = wp_get_current_user()->ID;
+        else
+          $authors[] = esc_attr( $_POST['post_author_override'] );
       }
 
       $authors = array_unique($authors);
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
       update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
+
+      $find_publication = get_posts(array(
+          'post_type'=>'af_product',
+          'meta_query'=>array(
+              array(
+                'key'=>'pubcode',
+                'value'=>esc_attr( $_POST['_pubcode'] )
+              )
+            ),
+          'posts_per_page'=>-1,
+          'post_status'=>'any'
+          ));
+
+      if( !empty($find_publication) ){
+        foreach($find_publication as $pub){
+          
+          $publication_contributors = get_post_meta($pub->ID,'_pub_contributors', true);
+
+          if( empty($publication_contributors) ){
+            $publication_contributors = $authors;
+          }else{
+            $publication_contributors = array_merge($publication_contributors,$authors);
+          }
+
+          $publication_contributors = array_unique($publication_contributors);
+
+          update_post_meta( $pub->ID, '_pub_contributors', $publication_contributors );
+        }
+      }
     }
 
     /**
