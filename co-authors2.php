@@ -73,6 +73,30 @@ if( ! array_key_exists( 'co_authors2', $GLOBALS ) ) {
       require 'co-authors2.template-functions.php';
     }
 
+    /**
+     * Verify that user is currently in a user role.
+     * 
+     * Check to see if the user is in one of the roles that are allowed to be a coauthor.
+     * 
+     * @param int|WP_User $user_id A user ID or a WP_User instance.
+     * @return bool True if the user is not part of the selected role or false if not.
+     */
+    /*public function is_user_in_roles( $user_id = '' ){
+      require 'admin/co-authors2.admin.php';
+      $co2_admin = new CoAuthors2Admin;
+
+      if( empty($user_id) )
+        wp_get_current_user()->ID;
+
+      if( $user_id instanceof WP_User )
+        $user_id = $user_id->ID;
+
+      if( in_array($user_id, $co2_admin->get_matched_users()) )
+        return true;
+      else
+        return false;
+    }*/
+
   }
 }
 

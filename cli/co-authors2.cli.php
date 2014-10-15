@@ -10,6 +10,22 @@ class CoAuthors2Import{
   }
 
   public static function relate_authors_to_pubs(){
+
+    $all_publications = get_posts(array(
+      'post_type'=>'af_product',
+      'posts_per_page'=>-1,
+      'post_status'=>'any'
+      ));
+
+    foreach( $all_publications as $publication ){
+      $has_editors = get_post_meta($publication->ID,'_pub_contributors',true);
+
+      if( !empty($has_editors) ){
+        delete_post_meta( $publication->ID, '_pub_contributors' );
+        echo "Deleted contributors for {$publication->post_title}\n";
+      }
+    }
+
     $relate = get_posts( array(
       'post_type'=>'post',
       'posts_per_page'=>-1,
@@ -23,13 +39,23 @@ class CoAuthors2Import{
       if( empty($has_coauthors) ){
         $has_coauthors = array();
         $has_coauthors[] = $post->post_author;
-        delete_post_meta( $post->ID,'_'.$GLOBALS['co_authors2']->prefix.'_post_authors' );
-        update_post_meta( $post->ID,'_'.$GLOBALS['co_authors2']->prefix.'_post_authors', $has_coauthors );
-        echo "Added post authors to {$post->ID}\n";
       }
 
+      // loop through each co-authors to make sure they belong to any of the user roles allowed to be a co-author
+      $verified_authors = array();
+      foreach( $has_coauthors as $author ){
+        if( user_can( $author, 'edit_posts' ) )
+          $verified_authors[] = $author;
+      }
+
+      delete_post_meta( $post->ID,'_'.$GLOBALS['co_authors2']->prefix.'_post_authors' );
+      update_post_meta( $post->ID,'_'.$GLOBALS['co_authors2']->prefix.'_post_authors', $verified_authors );
+
+      $test = implode(', ', $verified_authors);
+      echo "Added and verfied co-authors for post {$post->ID}. Co-Authors are $test\n";
+
       if( !empty($publication) ){
-        $test = implode(', ', $has_coauthors);
+        $test = implode(', ', $verified_authors);
         echo "Post {$post->ID} part of pub $publication with co-authors $test\n";
         $find_publication = get_posts(array(
           'post_type'=>'af_product',
@@ -49,9 +75,9 @@ class CoAuthors2Import{
             $publication_contributors = get_post_meta($pub->ID,'_pub_contributors', true);
 
             if( empty($publication_contributors) ){
-              $publication_contributors = $has_coauthors;
+              $publication_contributors = $verified_authors;
             }else{
-              $publication_contributors = array_merge($publication_contributors,$has_coauthors);
+              $publication_contributors = array_merge($publication_contributors,$verified_authors);
             }
 
             $publication_contributors = array_unique($publication_contributors);

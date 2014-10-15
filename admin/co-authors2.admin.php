@@ -378,6 +378,8 @@ if( !class_exists('CoAuthors2Admin') ){
           $authors[] = esc_attr( $_POST['post_author_override'] );
       }
 
+      do_action('ca2_save_post_authors', get_the_ID(), $authors );
+
       $authors = array_unique($authors);
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
       update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
@@ -415,7 +417,7 @@ if( !class_exists('CoAuthors2Admin') ){
     /**
      * Get the users that match the roles selected.
      * 
-     * Get all users that match the roles that to be displayed
+     * Get all users that match the roles that are allowed to be co-authors. These are the users displayed in the dropdown when selecting an author.
      * 
      * @return array An associative array of matched users with the user ID as the key and the display name as the value
      */
@@ -445,7 +447,8 @@ if( !class_exists('CoAuthors2Admin') ){
      * @return array Column names to display
      */
     public function custom_post_columns($defaults){
-      $defaults[$this->prefix.'_column'] = 'Co-Authors';
+      $defaults[$this->prefix.'_column'] = __('Authors');
+      unset($defaults['author']);
       return $defaults;
     }
 

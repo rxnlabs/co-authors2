@@ -134,3 +134,9 @@ if( !function_exists('get_coauthors2_posts_links') ){
 
   }
 }
+
+if( !function_exists('is_user_in_roles_coauthors2') && method_exists($co_authors2,'is_user_in_roles') ){
+  function is_user_in_roles_coauthors2( $user_id = '' ){
+    return $co_authors2->is_user_in_roles($user_id);
+  }
+}
