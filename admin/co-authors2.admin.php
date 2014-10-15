@@ -392,6 +392,7 @@ if( !class_exists('CoAuthors2Admin') ){
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
       update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
 
+      /*
       $find_publication = get_posts(array(
           'post_type'=>'af_product',
           'meta_query'=>array(
@@ -419,7 +420,7 @@ if( !class_exists('CoAuthors2Admin') ){
 
           update_post_meta( $pub->ID, '_pub_contributors', $publication_contributors );
         }
-      }
+      */
     }
 
     /**
