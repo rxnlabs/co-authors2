@@ -197,7 +197,9 @@ if( !class_exists('CoAuthors2Admin') ){
       $already_imported_coauthors_plus = (int)get_option( '_'.$this->prefix.'_imported_coauthrsplus', 0 );
 
       if( $already_imported_coauthors_plus != 1 ){  
-        define('WP_MEMORY_LIMIT','512');
+
+        if( !defined('WP_MEMORY_LIMIT') )
+          define('WP_MEMORY_LIMIT','768');
 
         // look for all posts that have the coauthors-plus term
         $post_types = get_post_types( array(
@@ -251,6 +253,9 @@ if( !class_exists('CoAuthors2Admin') ){
             $count++;
           }
         }
+
+        if( isset($posts) )
+          unset($posts);
 
         update_option( '_'.$this->prefix.'_imported_coauthrsplus', 1 );
         if( $echo ) echo "Finished importing post authors to Co-Authors2 plugin\n";

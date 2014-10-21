@@ -33,7 +33,9 @@ global $co_authors2;
   </form>
 
   <?php if( get_option( '_'.$co_authors2->prefix.'_imported_coauthrsplus', 0 ) == '0' ):?>
-  <h3><?php _e('Looks like you have the Co-Authors Plus plugin installed. Do you want to import all authors to Co-Authors2?');?></h3>
+    <h3><?php _e('Do you want to import all authors to Co-Authors2?');?></h3>
+    <p><?php _e('This also imports authors from the Co-Authors Plus plugin');?></p>
+    <p><strong><?php _e('It could take a long time to import all authors if you have a lot of posts and eat of a lot of memory. This command can also be run from the PHP command line if you have ssh access to the site\'s server.');?></strong></p>
     <form method="post" action="options-general.php?page=<?php echo $co_authors2->prefix;?>-settings.php" id="<?php _e($co_authors2->prefix);?>_import_form">
       <?php wp_nonce_field( $co_authors2->prefix.'_save_import', $co_authors2->prefix.'_import' );?>
       <p><input name="<?php _e($co_authors2->prefix);?>_import_co_authors_plus" class="button button-primary button-large" accesskey="p" value="Import Co-Authors &raquo;" type="submit"></p>
