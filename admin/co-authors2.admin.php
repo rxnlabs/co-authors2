@@ -206,7 +206,7 @@ if( !class_exists('CoAuthors2Admin') ){
           'public'=>true,
           'publicly_queryable'=>true
           ), 'names' );
-
+        $count = 0;
         foreach( $post_types as $post_type ){
           // check if the post type supports an author
           if( !post_type_supports( $post_type,'author') || in_array($post_type, $this->filtered_cpt) )
@@ -214,16 +214,19 @@ if( !class_exists('CoAuthors2Admin') ){
 
           $posts = get_posts(array(
             'posts_per_page'=>-1,
-            'fields'=>'ids'
+            'post_type'=>$post_type,
+            'post_status'=>'any',
+            'orderby'=>'post_date',
+            'order'=>'DESC',
+            'numberposts'=>-1
             ));
 
-          $co_authors_plus = is_plugin_active( 'co-authors-plus/co-authors-plus.php' );
+          $is_co_authors_plus_plugin = is_plugin_active( 'co-authors-plus/co-authors-plus.php' );
 
-          $count = 0;
           foreach( $posts as $single_post ){
             $coauthors = array();
             // import from the co-authors-plus plugin
-            if( $co_authors_plus ){
+            if( $is_co_authors_plus_plugin ){
               global $coauthors_plus;
 
               $authors = get_coauthors( $single_post );
@@ -235,34 +238,31 @@ if( !class_exists('CoAuthors2Admin') ){
               if( count($coauthors) == 0 )
                 $coauthors[] = $single_post->post_author;
 
-            }else{
+            }else{ 
               $coauthors[] = $single_post->post_author;
             }
-
             // make sure this post doesn't already have the co-authors2 meta data before overwriting it
             $already_has_co2_authors = get_post_meta( $single_post->ID, '_'.$this->prefix.'_post_authors', true );
 
             if( empty($already_has_co2_authors[0]) ){
               delete_post_meta( $single_post->ID, '_'.$this->prefix.'_post_authors' );
               update_post_meta( $single_post->ID, '_'.$this->prefix.'_post_authors', $coauthors, true );
-              if( $echo ) echo "Imported authors for post $single_post\n";
+              $count++;
+              if( $echo ) echo "Imported authors for post {$single_post->ID} \n";
             }else{
-              if( $echo ) echo "Co-Authors already set for post $single_post\n";
+              if( $echo ) echo "Co-Authors already set for post {$single_post->ID}\n";
             }
 
-            $count++;
           }
         }
-
-        if( isset($posts) )
-          unset($posts);
 
         update_option( '_'.$this->prefix.'_imported_coauthorsplus', 1 );
         if( $echo ) echo "Finished importing post authors to Co-Authors2 plugin\n";
         if( $echo ) echo "Imported post authors for $count posts\n";
       }else{
+        
         if( $echo ) echo "Already imported post authors to Co-Authors2 plugin\n";
-
+        
       }
 
     }
