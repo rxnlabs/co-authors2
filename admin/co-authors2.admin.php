@@ -256,13 +256,16 @@ if( !class_exists('CoAuthors2Admin') ){
           }
         }
 
+        if( isset($posts) )
+          unset($posts);
+        
         update_option( '_'.$this->prefix.'_imported_coauthorsplus', 1 );
         if( $echo ) echo "Finished importing post authors to Co-Authors2 plugin\n";
         if( $echo ) echo "Imported post authors for $count posts\n";
       }else{
         
         if( $echo ) echo "Already imported post authors to Co-Authors2 plugin\n";
-        
+
       }
 
     }
