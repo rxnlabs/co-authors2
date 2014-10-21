@@ -380,34 +380,13 @@ if( !class_exists('CoAuthors2Admin') ){
           $authors[] = esc_attr( $_POST['post_author_override'] );
       }
 
-      do_action('ca2_save_post_authors', get_the_ID(), $authors );
+      // call all functions attached to custom action hook
+      do_action( 'ca2_save_post_authors', get_the_ID(), $authors );
 
       $authors = array_unique($authors);
 
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
       update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
-
-      $pubcode = esc_attr( $_POST['_pubcode'] );
-
-      // find the publication that the post belongs to and add the editor to the list of publication contributors
-      $query = "SELECT $wpdb->postmeta.post_id FROM $wpdb->postmeta WHERE $wpdb->postmeta.meta_key = 'pubcode' AND $wpdb->postmeta.meta_value = '$pubcode' LIMIT 1";
-
-      $find_publication = $wpdb->get_row( $query, OBJECT );
-
-      if( !empty($find_publication) ){
-          
-        $publication_contributors = get_post_meta($find_publication->post_id,'_pub_contributors', true);
-
-        if( empty($publication_contributors) ){
-          $publication_contributors = $authors;
-        }else{
-          $publication_contributors = array_merge($publication_contributors,$authors);
-        }
-
-        $publication_contributors = array_unique($publication_contributors);
-
-        update_post_meta( $find_publication->post_id, '_pub_contributors', $publication_contributors );
-      }
       
     }
 
@@ -452,22 +431,27 @@ if( !class_exists('CoAuthors2Admin') ){
     /**
      * Show the content to be used when displaying the co-authors column.
      * 
-     * Show the co-authors on the WordPress posts page.
+     * Show the co-authors on the WordPress posts page in the authors columns.
      * 
      * @return void
      */
     public function custom_post_columns_content( $column_name, $post_id ){
-
+      global $post;
       if( $column_name == $this->prefix.'_column' ){
       
         $ca2_authors = get_post_meta( $post_id, '_'.$this->prefix.'_post_authors', true );
         $authors = array();
-        // if there are already authors assigned to the post, list them in the metabox
+        
+        // show co-authors of a post in the column if there are any co-authors
         if( !empty($ca2_authors) ){
           foreach( $ca2_authors as $author ){
             $data = get_userdata( $author );
             $authors[] = '<a href="edit.php?author_name='.$data->user_login.'">'.$data->display_name.'</a>';
           }
+        }else{
+          // else, show the post's real author
+          $data = get_userdata( $post->post_author );
+          $authors[] = '<a href="edit.php?author_name='.$data->user_login.'">'.$data->display_name.'</a>';
         }
 
         if( !empty($authors[0]) )
