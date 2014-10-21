@@ -11,8 +11,13 @@ class CoAuthors2CLI{
 
 }
 
-//pull in wordpress
+// setup PHP CLI environment
 ini_set('memory_limit','1500M');
+// check if PHP is running on a Mac. If so, change the database host from localhost to 127.0.0.1 to prevent a MySQL connection error.
+$is_mac = stripos( php_uname(), 'mac' );
+if( $is_mac !== false )
+  define('DB_HOST','127.0.0.1');
+//pull in wordpress
 if( file_exists(__DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'wp-blog-header.php') ){
   require __DIR__.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'wp-blog-header.php';
 }else{

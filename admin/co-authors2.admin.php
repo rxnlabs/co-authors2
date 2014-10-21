@@ -194,11 +194,11 @@ if( !class_exists('CoAuthors2Admin') ){
     public function import_co_authors_plus( $echo = false ){
 
       // flag to set whether we've already imported authors from the Co-Authors Plus plugin
-      $already_imported_coauthors_plus = (int)get_option( '_'.$this->prefix.'_imported_coauthrsplus', 0 );
+      $already_imported_coauthors_plus = (int)get_option( '_'.$this->prefix.'_imported_coauthorsplus', 0 );
 
       if( $already_imported_coauthors_plus != 1 ){  
 
-        if( !defined('WP_MEMORY_LIMIT') )
+        if( php_sapi_name() != 'cli' && !defined('WP_MEMORY_LIMIT') )
           define('WP_MEMORY_LIMIT','768');
 
         // look for all posts that have the coauthors-plus term
@@ -240,11 +240,11 @@ if( !class_exists('CoAuthors2Admin') ){
             }
 
             // make sure this post doesn't already have the co-authors2 meta data before overwriting it
-            $already_has_co2_authors = get_post_meta( $single_post, '_'.$this->prefix.'_post_authors', true );
+            $already_has_co2_authors = get_post_meta( $single_post->ID, '_'.$this->prefix.'_post_authors', true );
 
-            if( empty($already_has_co2_authors) ){
-              delete_post_meta( $single_post, '_'.$this->prefix.'_post_authors' );
-              update_post_meta( $single_post, '_'.$this->prefix.'_post_authors', $coauthors, true );
+            if( empty($already_has_co2_authors[0]) ){
+              delete_post_meta( $single_post->ID, '_'.$this->prefix.'_post_authors' );
+              update_post_meta( $single_post->ID, '_'.$this->prefix.'_post_authors', $coauthors, true );
               if( $echo ) echo "Imported authors for post $single_post\n";
             }else{
               if( $echo ) echo "Co-Authors already set for post $single_post\n";
@@ -257,7 +257,7 @@ if( !class_exists('CoAuthors2Admin') ){
         if( isset($posts) )
           unset($posts);
 
-        update_option( '_'.$this->prefix.'_imported_coauthrsplus', 1 );
+        update_option( '_'.$this->prefix.'_imported_coauthorsplus', 1 );
         if( $echo ) echo "Finished importing post authors to Co-Authors2 plugin\n";
         if( $echo ) echo "Imported post authors for $count posts\n";
       }else{
@@ -336,11 +336,12 @@ if( !class_exists('CoAuthors2Admin') ){
      */
     public function custom_metabox(){
       global $wp_scripts;
+      global $post;
       wp_nonce_field( basename( __FILE__ ), $this->prefix.'_select_author' );
       if( get_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', true ) ){
         $ca2_authors = get_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', true );
       }else{
-        $ca2_authors = '';
+        $ca2_authors[] = $post->post_author;
       }
 
       echo '<p>'.__( 'Select post authors by typing an author\'s name in the textbox below' ).'</p>'; 
