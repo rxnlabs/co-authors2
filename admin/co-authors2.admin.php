@@ -194,19 +194,17 @@ if( !class_exists('CoAuthors2Admin') ){
     public function import_co_authors_plus( $echo = false ){
 
       // flag to set whether we've already imported authors from the Co-Authors Plus plugin
-      $already_imported_coauthors_plus = (int)get_option( '_'.$this->prefix.'_imported_coauthorsplus', 0 );
+      $already_imported_coauthors_plus = (int)get_option( '_'.$this->prefix.'_imported_coauthrsplus', 0 );
 
       if( $already_imported_coauthors_plus != 1 ){  
-
-        if( php_sapi_name() != 'cli' && !defined('WP_MEMORY_LIMIT') )
-          define('WP_MEMORY_LIMIT','768');
+        define('WP_MEMORY_LIMIT','512');
 
         // look for all posts that have the coauthors-plus term
         $post_types = get_post_types( array(
           'public'=>true,
           'publicly_queryable'=>true
           ), 'names' );
-        $count = 0;
+
         foreach( $post_types as $post_type ){
           // check if the post type supports an author
           if( !post_type_supports( $post_type,'author') || in_array($post_type, $this->filtered_cpt) )
@@ -214,19 +212,16 @@ if( !class_exists('CoAuthors2Admin') ){
 
           $posts = get_posts(array(
             'posts_per_page'=>-1,
-            'post_type'=>$post_type,
-            'post_status'=>'any',
-            'orderby'=>'post_date',
-            'order'=>'DESC',
-            'numberposts'=>-1
+            'fields'=>'ids'
             ));
 
-          $is_co_authors_plus_plugin = is_plugin_active( 'co-authors-plus/co-authors-plus.php' );
+          $co_authors_plus = is_plugin_active( 'co-authors-plus/co-authors-plus.php' );
 
+          $count = 0;
           foreach( $posts as $single_post ){
             $coauthors = array();
             // import from the co-authors-plus plugin
-            if( $is_co_authors_plus_plugin ){
+            if( $co_authors_plus ){
               global $coauthors_plus;
 
               $authors = get_coauthors( $single_post );
@@ -238,32 +233,29 @@ if( !class_exists('CoAuthors2Admin') ){
               if( count($coauthors) == 0 )
                 $coauthors[] = $single_post->post_author;
 
-            }else{ 
+            }else{
               $coauthors[] = $single_post->post_author;
             }
-            // make sure this post doesn't already have the co-authors2 meta data before overwriting it
-            $already_has_co2_authors = get_post_meta( $single_post->ID, '_'.$this->prefix.'_post_authors', true );
 
-            if( empty($already_has_co2_authors[0]) ){
-              delete_post_meta( $single_post->ID, '_'.$this->prefix.'_post_authors' );
-              update_post_meta( $single_post->ID, '_'.$this->prefix.'_post_authors', $coauthors, true );
-              $count++;
-              if( $echo ) echo "Imported authors for post {$single_post->ID} \n";
+            // make sure this post doesn't already have the co-authors2 meta data before overwriting it
+            $already_has_co2_authors = get_post_meta( $single_post, '_'.$this->prefix.'_post_authors', true );
+
+            if( empty($already_has_co2_authors) ){
+              delete_post_meta( $single_post, '_'.$this->prefix.'_post_authors' );
+              update_post_meta( $single_post, '_'.$this->prefix.'_post_authors', $coauthors, true );
+              if( $echo ) echo "Imported authors for post $single_post\n";
             }else{
-              if( $echo ) echo "Co-Authors already set for post {$single_post->ID}\n";
+              if( $echo ) echo "Co-Authors already set for post $single_post\n";
             }
 
+            $count++;
           }
         }
 
-        if( isset($posts) )
-          unset($posts);
-        
-        update_option( '_'.$this->prefix.'_imported_coauthorsplus', 1 );
+        update_option( '_'.$this->prefix.'_imported_coauthrsplus', 1 );
         if( $echo ) echo "Finished importing post authors to Co-Authors2 plugin\n";
         if( $echo ) echo "Imported post authors for $count posts\n";
       }else{
-        
         if( $echo ) echo "Already imported post authors to Co-Authors2 plugin\n";
 
       }
@@ -339,12 +331,11 @@ if( !class_exists('CoAuthors2Admin') ){
      */
     public function custom_metabox(){
       global $wp_scripts;
-      global $post;
       wp_nonce_field( basename( __FILE__ ), $this->prefix.'_select_author' );
       if( get_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', true ) ){
         $ca2_authors = get_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', true );
       }else{
-        $ca2_authors[] = $post->post_author;
+        $ca2_authors = '';
       }
 
       echo '<p>'.__( 'Select post authors by typing an author\'s name in the textbox below' ).'</p>'; 
@@ -389,13 +380,34 @@ if( !class_exists('CoAuthors2Admin') ){
           $authors[] = esc_attr( $_POST['post_author_override'] );
       }
 
-      // call all functions attached to custom action hook
-      do_action( 'ca2_save_post_authors', get_the_ID(), $authors );
+      do_action('ca2_save_post_authors', get_the_ID(), $authors );
 
       $authors = array_unique($authors);
 
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
       update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
+
+      $pubcode = esc_attr( $_POST['_pubcode'] );
+
+      // find the publication that the post belongs to and add the editor to the list of publication contributors
+      $query = "SELECT $wpdb->postmeta.post_id FROM $wpdb->postmeta WHERE $wpdb->postmeta.meta_key = 'pubcode' AND $wpdb->postmeta.meta_value = '$pubcode' LIMIT 1";
+
+      $find_publication = $wpdb->get_row( $query, OBJECT );
+
+      if( !empty($find_publication) ){
+          
+        $publication_contributors = get_post_meta($find_publication->post_id,'_pub_contributors', true);
+
+        if( empty($publication_contributors) ){
+          $publication_contributors = $authors;
+        }else{
+          $publication_contributors = array_merge($publication_contributors,$authors);
+        }
+
+        $publication_contributors = array_unique($publication_contributors);
+
+        update_post_meta( $find_publication->post_id, '_pub_contributors', $publication_contributors );
+      }
       
     }
 
@@ -440,27 +452,22 @@ if( !class_exists('CoAuthors2Admin') ){
     /**
      * Show the content to be used when displaying the co-authors column.
      * 
-     * Show the co-authors on the WordPress posts page in the authors columns.
+     * Show the co-authors on the WordPress posts page.
      * 
      * @return void
      */
     public function custom_post_columns_content( $column_name, $post_id ){
-      global $post;
+
       if( $column_name == $this->prefix.'_column' ){
       
         $ca2_authors = get_post_meta( $post_id, '_'.$this->prefix.'_post_authors', true );
         $authors = array();
-        
-        // show co-authors of a post in the column if there are any co-authors
+        // if there are already authors assigned to the post, list them in the metabox
         if( !empty($ca2_authors) ){
           foreach( $ca2_authors as $author ){
             $data = get_userdata( $author );
             $authors[] = '<a href="edit.php?author_name='.$data->user_login.'">'.$data->display_name.'</a>';
           }
-        }else{
-          // else, show the post's real author
-          $data = get_userdata( $post->post_author );
-          $authors[] = '<a href="edit.php?author_name='.$data->user_login.'">'.$data->display_name.'</a>';
         }
 
         if( !empty($authors[0]) )
