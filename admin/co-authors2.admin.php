@@ -150,7 +150,7 @@ if( !class_exists('CoAuthors2Admin') ){
     * @return void
     */
     public function save_settings(){
-    if( $_GET['page'] === $this->prefix.'-settings.php' ){
+    if( isset( $_GET['page'] ) && $_GET['page'] === $this->prefix.'-settings.php' ){
 
       if( isset($_POST) &&
         !empty($_POST) &&
@@ -268,7 +268,7 @@ if( !class_exists('CoAuthors2Admin') ){
      * @return void
      */
     public function admin_notices(){
-      if( $_GET['page'] === $this->prefix.'-settings.php' && !empty($_POST) ){
+      if( isset( $_GET['page'] ) && $_GET['page'] === $this->prefix.'-settings.php' && !empty($_POST) ){
         if( isset($_POST[$this->prefix.'_import_co_authors_plus']) ){
           echo sprintf( '<div class="updated"><p>%s</p></div>', __( 'Imported Authors From Co-Authurs Plus plugin') );
         }
