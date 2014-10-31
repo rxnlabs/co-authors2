@@ -40,7 +40,7 @@ if( !function_exists('get_coauthors2') ){
 
     if( count($coauthors) != 0 && !$coauthors[0] instanceof WP_Error )
       return $coauthors;
-    elseif( $coauthors[0] instanceof WP_Error )
+    elseif( isset( $coauthors[0] ) && $coauthors[0] instanceof WP_Error )
       return $coauthors[0];
     else
       return;
