@@ -33,6 +33,7 @@ if( !class_exists('CoAuthors2Public') ){
 
       if( !empty($find_co_authors) ){
         foreach( $find_co_authors as $author_id ){
+          // check if the author ID still exists in the database
           $is_still_active = get_userdata($author_id);
 
           if( $is_still_active instanceof WP_User ){
