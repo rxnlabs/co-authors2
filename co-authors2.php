@@ -29,7 +29,7 @@ if ( ! empty( $_SERVER['SCRIPT_FILENAME'] ) && basename( __FILE__ ) == basename(
 
 // Only create an instance of the plugin if it doesn't already exists in GLOBALS
 if( ! array_key_exists( 'co_authors2', $GLOBALS ) ) {
-  define('CO_AUTHORS2_VERSION','1.0a');
+  define('CO_AUTHORS2_VERSION','1.0b');
 
   class CoAuthors2{
 
