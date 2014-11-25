@@ -179,6 +179,7 @@ if( !class_exists('CoAuthors2Admin') ){
         !empty($_POST) &&
         array_filter($_POST) != false &&
         is_admin() && 
+        isset( $_POST[$this->prefix.'_save_import'] ) &&
         !wp_verify_nonce( $_POST[$this->prefix.'_save_import'], $co_authors2_admin->prefix.'_import' ) && 
         isset($_POST[$this->prefix.'_import_co_authors_plus']) ){
         $this->import_co_authors_plus();
