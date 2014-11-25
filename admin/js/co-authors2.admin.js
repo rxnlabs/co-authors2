@@ -1,4 +1,3 @@
-
 jQuery(document).ready(function($){
   var users = $.parseJSON(ca2.users);
   var substringMatcher = function(strs) {
@@ -40,12 +39,12 @@ jQuery(document).ready(function($){
     $(this).val('');
   });
 
-  // remove the author from the post
+  // remove the author from the post when the "remove" link is selected
   $(document).on('click','.ca2_remove_author',function(){
     $(this).parent().remove();
   });
 
-  // make the post's actual author the first author selected. This way the wrong author won't show up in the post if plugin is removed
+  // make the post's actual author the first co-author selected. This way the wrong author won't show up in the post if plugin is removed or de-activated
   $('form#post').on('submit',function(){
     var first_coauthor = $('input.ca2_post_authors:first').val();
     $('#post_author_override').val(first_coauthor);

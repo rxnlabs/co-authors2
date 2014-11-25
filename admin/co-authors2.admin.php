@@ -52,6 +52,18 @@ if( !class_exists('CoAuthors2Admin') ){
       add_action( 'save_post', array( &$this, 'save_coauthors' ) );
       add_filter( 'manage_posts_columns', array( &$this, 'custom_post_columns') );
       add_action( 'manage_posts_custom_column', array( &$this, 'custom_post_columns_content'), 10, 2 );
+      // Show co-authors column on all custom post types
+      $post_types = get_post_types(array(
+        'public'=>true,
+        'publicly_queryable'=>true
+        ));
+      foreach( $post_types as $post_type ){
+        // check if the post type supports an author
+        if( !post_type_supports( $post_type,'author') || in_array($post_type, $this->filtered_cpt) ){
+          add_action( 'manage_'.$post_type->name.'_custom_column', array( &$this, 'custom_post_columns_content'), 10, 2 );
+        }
+        
+      }
     }
 
     /**
@@ -173,7 +185,7 @@ if( !class_exists('CoAuthors2Admin') ){
           $result = update_option( '_'.$this->prefix.'_role_filter', maybe_serialize($filter_roles) );
 
         }
-      }
+
 
       if( isset($_POST) &&
         !empty($_POST) &&
@@ -387,28 +399,6 @@ if( !class_exists('CoAuthors2Admin') ){
 
       delete_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors' );
       update_post_meta( get_the_ID(), '_'.$this->prefix.'_post_authors', $authors, true );
-
-      $pubcode = esc_attr( $_POST['_pubcode'] );
-
-      // find the publication that the post belongs to and add the editor to the list of publication contributors
-      $query = "SELECT $wpdb->postmeta.post_id FROM $wpdb->postmeta WHERE $wpdb->postmeta.meta_key = 'pubcode' AND $wpdb->postmeta.meta_value = '$pubcode' LIMIT 1";
-
-      $find_publication = $wpdb->get_row( $query, OBJECT );
-
-      if( !empty($find_publication) ){
-          
-        $publication_contributors = get_post_meta($find_publication->post_id,'_pub_contributors', true);
-
-        if( empty($publication_contributors) ){
-          $publication_contributors = $authors;
-        }else{
-          $publication_contributors = array_merge($publication_contributors,$authors);
-        }
-
-        $publication_contributors = array_unique($publication_contributors);
-
-        update_post_meta( $find_publication->post_id, '_pub_contributors', $publication_contributors );
-      }
       
     }
 
@@ -458,9 +448,8 @@ if( !class_exists('CoAuthors2Admin') ){
      * @return void
      */
     public function custom_post_columns_content( $column_name, $post_id ){
-
       if( $column_name == $this->prefix.'_column' ){
-      
+
         $ca2_authors = get_post_meta( $post_id, '_'.$this->prefix.'_post_authors', true );
         $authors = array();
         // if there are already authors assigned to the post, list them in the metabox
@@ -473,7 +462,11 @@ if( !class_exists('CoAuthors2Admin') ){
 
         if( !empty($authors[0]) )
           echo implode(', ',$authors);
-      }
+        else{
+            $data = get_userdata( get_post_field( 'post_author', $post_id ) );
+            echo '<a href="edit.php?author_name='.$data->user_login.'">'.$data->display_name.'</a>';
+          }
+        }
 
     }
 
